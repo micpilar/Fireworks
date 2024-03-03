@@ -1,24 +1,11 @@
 import pygame
 import random
 import os
+from moviepy.editor import ImageSequenceClip
 
 BLACK = (0, 0, 0)
 
 pygame.init()
-pygame.mixer.init()
-
-music_files = [f for f in os.listdir('music') if f.endswith('.mp3')]
-
-MUSIC_ENDED = pygame.USEREVENT + 1
-pygame.mixer.music.set_endevent(MUSIC_ENDED)
-
-def play_random_music(filename=None):
-    if filename is None or filename not in music_files:
-        filename = random.choice(music_files)
-    pygame.mixer.music.load('music/' + filename)
-    pygame.mixer.music.play()
-
-play_random_music('GatherTheFaithful.mp3')
 
 size = (pygame.display.Info().current_w, pygame.display.Info().current_h)
 screen = pygame.display.set_mode(size, pygame.FULLSCREEN)
@@ -66,12 +53,17 @@ class Firework:
         if len(self.trail) > 1:
             pygame.draw.lines(screen, self.color, False, self.trail, 2)
 
+frame_rate = 60
+frame_duration = 1.0 / frame_rate
+frames = []
+
+frame_count = 0
+os.makedirs("frames", exist_ok=True)
+
 while not done:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             done = True
-        elif event.type == MUSIC_ENDED:
-            play_random_music()
 
     if random.random() < 0.1:
         fireworks.append(Firework())
@@ -97,6 +89,17 @@ while not done:
         p.draw(screen)
 
     pygame.display.flip()
-    clock.tick(60)
+    clock.tick(frame_rate)
+
+    frame_path = f"frames/frame_{frame_count}.jpg"
+    pygame.image.save(screen, frame_path)
+    frames.append(frame_path)
+    frame_count += 1
 
 pygame.quit()
+
+clip = ImageSequenceClip(frames, fps=frame_rate)
+clip.write_videofile("fireworks.mp4")
+
+for frame in frames:
+    os.remove(frame)
